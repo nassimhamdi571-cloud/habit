@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>طريق 455 — بناء العادات</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="طريق 455">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="premium-bg"></div>
+<div class="luxury-grid"></div>
+<div class="mouse-glow" id="mouseGlow" style="position:fixed;inset:0;pointer-events:none;z-index:0;"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-mark">♔</span>
+    <span class="brand-name">طريق 455</span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <div class="icon-btn" style="position:relative;" onclick="goto('reviews')">
+      <span id="reviewDot" style="display:none;position:absolute;top:6px;left:6px;width:7px;height:7px;border-radius:50%;background:var(--t);"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.2 21 12 17.56 5.8 21 7 14.14l-5-4.87 7.1-1.01z"/></svg>
+    </div>
+    <div class="icon-btn" onclick="openSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="app-main">
+  <div id="installBanner" class="glass-card install-banner" style="display:none;">
+    <span class="ib-icon">📲</span>
+    <div class="ib-text">ثبّت التطبيق على شاشتك الرئيسية<small>يعمل بدون إنترنت بعد أول تنزيل</small></div>
+    <button class="btn btn-sm" id="installBtn">تثبيت</button>
+  </div>
+
+  <div class="view active" id="homeView"></div>
+  <div class="view" id="statsView"></div>
+  <div class="view" id="manageView"></div>
+  <div class="view" id="reviewsView"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-inner">
+    <div class="nav-item active" data-view="home" onclick="goto('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+      <span>الرئيسية</span>
+    </div>
+    <div class="nav-item" data-view="stats" onclick="goto('stats')">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>
+      <span>التقدم</span>
+    </div>
+    <div class="nav-item" data-view="manage" onclick="goto('manage')">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <span>العادات</span>
+    </div>
+    <div class="nav-item" data-view="reviews" onclick="goto('reviews')">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.2 21 12 17.56 5.8 21 7 14.14l-5-4.87 7.1-1.01z"/></svg>
+      <span>الترقيات</span>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR (settings) -->
+<div id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div id="sidebarPanel">
+  <div class="sb-header">
+    <div class="sb-logo">طريق 455 ♔</div>
+    <div class="sb-sub">الإعدادات والتخصيص</div>
+  </div>
+  <div class="sb-body">
+    <div>
+      <div class="sb-label">اللون</div>
+      <div class="sb-grid" id="themeGrid"></div>
+    </div>
+    <div>
+      <div class="sb-label">المظهر</div>
+      <div class="sb-mode-row" onclick="toggleLight()">
+        <span class="sb-name" id="lightLabel">الوضع الداكن</span>
+        <div class="sb-pill" id="lightPill"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sb-label">البيانات</div>
+      <button class="btn btn-ghost btn-block btn-sm" style="margin-bottom:8px;" onclick="exportData()">تصدير نسخة احتياطية (JSON)</button>
+      <button class="btn btn-danger btn-block btn-sm" onclick="confirmReset()">إعادة تعيين كل شيء</button>
+    </div>
+    <div>
+      <div class="sb-label">حول</div>
+      <div style="font-size:.68rem;color:var(--text-muted);line-height:1.8;">
+        رحلة 455 يومًا (سنة وثلاثة أشهر) لبناء عاداتك تدريجيًا. كل بياناتك مخزّنة على جهازك فقط ولا تُرسل لأي خادم.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet" id="modalSheet"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ONBOARDING -->
+<div id="onboardOverlay" style="display:none;">
+  <div class="ob-wrap">
+    <div class="ob-progress"><i></i><i></i><i></i><i></i></div>
+
+    <div class="ob-step active" id="obStep0">
+      <div class="ob-head">
+        <div class="ob-crown">♔</div>
+        <div class="ob-title">أهلًا بك في طريق 455</div>
+        <div class="ob-sub">رفيقك الذكي لبناء عادات جديدة على مدى سنة وثلاثة أشهر (455 يومًا). لا اعتماد على قوة الإرادة وحدها — التطبيق يتدرج معك خطوة بخطوة، ويثبّت المستوى إن تعثرت، ويرفعه حين تكون جاهزًا.</div>
+      </div>
+      <div class="ob-body"></div>
+      <div class="ob-foot"><button class="btn btn-block" onclick="obNext()">لنبدأ</button></div>
+    </div>
+
+    <div class="ob-step" id="obStep1">
+      <div class="ob-head">
+        <div class="ob-title">اختر عاداتك الأولى</div>
+        <div class="ob-sub">يُنصح بالبدء بـ 1-3 عادات فقط لتجنّب الإرهاق. يمكنك إضافة المزيد لاحقًا من تبويب "العادات".</div>
+      </div>
+      <div class="ob-body"><div class="template-grid" id="obTplGrid"></div></div>
+      <div class="ob-foot">
+        <button class="btn btn-ghost" onclick="obBack()">رجوع</button>
+        <button class="btn" onclick="obNext()">التالي</button>
+      </div>
+    </div>
+
+    <div class="ob-step" id="obStep2">
+      <div class="ob-head">
+        <div class="ob-title">أيام الأسبوع</div>
+        <div class="ob-sub">حدد الأيام المناسبة لكل عادة. الأيام غير المحددة تُعتبر أيام راحة ولا تؤثر على تتابعك.</div>
+      </div>
+      <div class="ob-body" id="obDaysWrap"></div>
+      <div class="ob-foot">
+        <button class="btn btn-ghost" onclick="obBack()">رجوع</button>
+        <button class="btn" onclick="obNext()">التالي</button>
+      </div>
+    </div>
+
+    <div class="ob-step" id="obStep3">
+      <div class="ob-head">
+        <div class="ob-title">تذكير يومي</div>
+        <div class="ob-sub">وقت مناسب لتذكيرك بمراجعة عاداتك (اختياري — الإشعارات تعمل حسب دعم جهازك).</div>
+      </div>
+      <div class="ob-body">
+        <span class="field-label">الوقت</span>
+        <input type="time" id="obReminderTime" value="20:00">
+      </div>
+      <div class="ob-foot">
+        <button class="btn btn-ghost" onclick="obBack()">رجوع</button>
+        <button class="btn" onclick="finishOnboarding()">ابدأ الرحلة ✦</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
