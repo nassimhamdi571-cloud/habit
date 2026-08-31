@@ -81,6 +81,7 @@
     <div class="sb-sub" data-i18n="settings_sub">الإعدادات والتخصيص</div>
   </div>
   <div class="sb-body">
+    <!-- اللغة -->
     <div>
       <div class="sb-label" data-i18n="settings_lang">اللغة</div>
       <div class="sb-mode-row" onclick="toggleLanguage()">
@@ -88,6 +89,17 @@
         <div class="sb-pill" id="langPill"></div>
       </div>
     </div>
+
+    <!-- المظهر (Light/Dark) - البند 1 -->
+    <div>
+      <div class="sb-label" data-i18n="settings_appearance">المظهر</div>
+      <div class="sb-mode-row" onclick="toggleThemeMode()">
+        <span class="sb-name" id="themeModeLabel">داكن</span>
+        <div class="sb-pill" id="themeModePill"></div>
+      </div>
+    </div>
+
+    <!-- اللون الأساسي -->
     <div>
       <div class="sb-label" data-i18n="settings_theme">اللون الأساسي</div>
       <div style="display:flex;gap:12px;align-items:center;">
@@ -108,6 +120,8 @@
         <div class="theme-swatch" style="background:#2C3E50;" onclick="applyThemePreset('#2C3E50',30,25)"></div>
       </div>
     </div>
+
+    <!-- نمط الخلفية -->
     <div>
       <div class="sb-label" data-i18n="settings_bg">نمط الخلفية</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -117,11 +131,18 @@
         <div class="bg-option" data-bg="snow" onclick="setBgStyle('snow')">ثلج</div>
       </div>
     </div>
+
+    <!-- البيانات -->
     <div>
       <div class="sb-label" data-i18n="settings_misc">أخرى</div>
       <button class="btn btn-ghost btn-block btn-sm" onclick="exportData()" data-i18n="settings_export">تصدير نسخة احتياطية</button>
+      <!-- البند 7: استيراد نسخة احتياطية -->
+      <button class="btn btn-ghost btn-block btn-sm" onclick="document.getElementById('importFileInput').click()" data-i18n="settings_import">استيراد نسخة احتياطية</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none" onchange="importData(event)">
       <button class="btn btn-danger btn-block btn-sm" onclick="confirmReset()" data-i18n="settings_reset">إعادة تعيين كل شيء</button>
     </div>
+
+    <!-- حول -->
     <div>
       <div class="sb-label" data-i18n="settings_about">حول</div>
       <div style="font-size:.68rem;color:var(--text-muted);line-height:1.8;" data-i18n="settings_about_text">
@@ -192,7 +213,8 @@
         </div>
         <div class="form-group">
           <label data-i18n="ob_progression">آلية التدرج</label>
-          <select id="obProgression">
+          <!-- البند 3: إضافة onchange لـ obProgression -->
+          <select id="obProgression" onchange="obProgChange()">
             <option value="smart" data-i18n="prog_smart">تلقائي ذكي</option>
             <option value="range" data-i18n="prog_range">نطاق مخصص</option>
             <option value="fixed" data-i18n="prog_fixed">ثابت (بدون تدرج)</option>
