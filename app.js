@@ -1,12 +1,7 @@
 /* ========================================================
    طريق 455 — Habit progression engine v2
-   Fully custom habits — no presets, no emojis
-   Flexible goals: number, duration, binary, open
-   Heatmap for full 455-day journey
-   Language toggle (AR/EN) with RTL/LTR
-   Full color control with hue/sat/light
-   Background styles: grid, concentric, electronic, snow
-======================================================== */
+   جميع الإصلاحات والميزات الجديدة (10 بنود)
+   ======================================================== */
 
 const STORAGE_KEY = 'h455_state_v2';
 const TOTAL_DAYS = 455;
@@ -18,13 +13,18 @@ const WEEKDAYS_SHORT_EN = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+/* لوحة ألوان ثابتة للعادة (البند 5) */
+const PALETTE = ['#D4A017','#B8C2D0','#2060D0','#197A46','#7235A0','#BE1A38','#8B7355','#2C3E50'];
+
 /* ---------- i18n ---------- */
 const I18N = {
   ar: {
     nav_home:'الرئيسية', nav_stats:'التقدم', nav_manage:'العادات', nav_reviews:'الترقيات',
-    settings_sub:'الإعدادات والتخصيص', settings_lang:'اللغة', settings_theme:'اللون الأساسي',
-    settings_bg:'نمط الخلفية', settings_misc:'أخرى', settings_export:'تصدير نسخة احتياطية',
-    settings_reset:'إعادة تعيين كل شيء', settings_about:'حول', settings_about_text:'رحلة 455 يومًا لبناء عاداتك تدريجيًا. كل البيانات مخزّنة محليًا.',
+    settings_sub:'الإعدادات والتخصيص', settings_lang:'اللغة', settings_appearance:'المظهر',
+    settings_theme:'اللون الأساسي', settings_bg:'نمط الخلفية', settings_misc:'أخرى',
+    settings_export:'تصدير نسخة احتياطية', settings_import:'استيراد نسخة احتياطية',
+    settings_reset:'إعادة تعيين كل شيء', settings_about:'حول',
+    settings_about_text:'رحلة 455 يومًا لبناء عاداتك تدريجيًا. كل البيانات مخزّنة محليًا.',
     ob_welcome_title:'أهلًا بك في طريق 455', ob_welcome_sub:'رفيقك الذكي لبناء عادات جديدة على مدى 455 يومًا.',
     ob_start:'لنبدأ', ob_add_title:'أضف عادتك الأولى', ob_add_sub:'ابدأ بعادة واحدة أو اثنتين فقط.',
     ob_name:'اسم العادة', ob_goal_type:'نوع الهدف', ob_unit:'الوحدة', ob_target:'الهدف الأولي',
@@ -40,13 +40,25 @@ const I18N = {
     add_first:'أضف عادتك الأولى', reviews_pending:'ترقيات جاهزة للمراجعة',
     accept:'قبول', postpone:'تأجيل', upgrade:'⬆ ترقية', hold:'⏸ تثبيت', down:'⬇ تخفيض',
     deload:'♻ أسبوع تفريغ', phase_establish:'التأسيس', phase_build:'البناء', phase_master:'الإتقان',
-    heatmap_title:'خريطة الالتزام — 455 يوم'
+    heatmap_title:'خريطة الالتزام — 455 يوم', day:'يوم', start:'البداية', of:'من', habits:'عادات',
+    today_habits:'عادات اليوم', no_habits_scheduled:'لا عادات مجدولة اليوم',
+    click_to_review:'اضغط لعرض التفاصيل', no_data:'لا بيانات بعد', last_30_days:'آخر 30 يوم',
+    no_reviews:'لا توجد مراجعات', reviews_auto:'ستظهر المراجعات في نهاية كل فترة.',
+    reviews:'المراجعات', details:'تفاصيل', current_goal:'الهدف الحالي', proposed:'المقترح',
+    days:'أيام', add_habit_sub:'أدخل بيانات العادة الجديدة', name_placeholder:'مثال: قراءة يومية',
+    unit_placeholder:'مثال: صفحة، دقيقة', target_placeholder:'مثال: 10 أو 0:30',
+    min:'الحد الأدنى', max:'الحد الأقصى', add:'إضافة', added:'تمت الإضافة',
+    reset_confirm:'إعادة تعيين كل شيء؟', reset_confirm_sub:'سيتم حذف جميع البيانات نهائيًا.',
+    reset:'إعادة تعيين', light:'فاتح', dark:'داكن', import_success:'تم استيراد النسخة بنجاح',
+    import_error:'فشل الاستيراد — ملف غير صالح',
   },
   en: {
     nav_home:'Home', nav_stats:'Progress', nav_manage:'Habits', nav_reviews:'Reviews',
-    settings_sub:'Settings & Customization', settings_lang:'Language', settings_theme:'Primary Color',
-    settings_bg:'Background Style', settings_misc:'Other', settings_export:'Export Backup',
-    settings_reset:'Reset Everything', settings_about:'About', settings_about_text:'455-day journey to build your habits gradually. All data stored locally.',
+    settings_sub:'Settings & Customization', settings_lang:'Language', settings_appearance:'Appearance',
+    settings_theme:'Primary Color', settings_bg:'Background Style', settings_misc:'Other',
+    settings_export:'Export Backup', settings_import:'Import Backup',
+    settings_reset:'Reset Everything', settings_about:'About',
+    settings_about_text:'455-day journey to build your habits gradually. All data stored locally.',
     ob_welcome_title:'Welcome to Path 455', ob_welcome_sub:'Your smart companion to build new habits over 455 days.',
     ob_start:"Let's Start", ob_add_title:'Add Your First Habit', ob_add_sub:'Start with just one or two habits.',
     ob_name:'Habit Name', ob_goal_type:'Goal Type', ob_unit:'Unit', ob_target:'Initial Target',
@@ -62,7 +74,17 @@ const I18N = {
     add_first:'Add Your First Habit', reviews_pending:'Reviews Ready',
     accept:'Accept', postpone:'Postpone', upgrade:'⬆ Upgrade', hold:'⏸ Hold', down:'⬇ Reduce',
     deload:'♻ Deload Week', phase_establish:'Establish', phase_build:'Build', phase_master:'Master',
-    heatmap_title:'Commitment Heatmap — 455 Days'
+    heatmap_title:'Commitment Heatmap — 455 Days', day:'Day', start:'Start', of:'of', habits:'habits',
+    today_habits:"Today's Habits", no_habits_scheduled:'No habits scheduled today',
+    click_to_review:'Click to review details', no_data:'No Data Yet', last_30_days:'Last 30 Days',
+    no_reviews:'No Reviews', reviews_auto:'Reviews will appear at the end of each period.',
+    reviews:'Reviews', details:'Details', current_goal:'Current Goal', proposed:'Proposed',
+    days:'days', add_habit_sub:'Enter the new habit details', name_placeholder:'e.g. Daily Reading',
+    unit_placeholder:'e.g. pages, min, km', target_placeholder:'e.g. 10 or 0:30',
+    min:'Min', max:'Max', add:'Add', added:'Added',
+    reset_confirm:'Reset Everything?', reset_confirm_sub:'All data will be permanently deleted.',
+    reset:'Reset', light:'Light', dark:'Dark', import_success:'Backup imported successfully',
+    import_error:'Import failed — invalid file',
   }
 };
 
@@ -70,6 +92,7 @@ let lang = 'ar';
 let currentView = 'home';
 let state = null;
 let bgStyle = 'grid';
+let selectedHabitId = null;  // البند 2: تخزين العادة المختارة في شاشة الإحصائيات
 
 /* ---------- State ---------- */
 function defaultState(){
@@ -77,6 +100,7 @@ function defaultState(){
     onboarded: false,
     startDate: todayStr(),
     lang: 'ar',
+    themeMode: 'dark',       // البند 1: تخزين الوضع الفاتح/الداكن
     primaryColor: '#D4A017',
     saturation: 82,
     lightness: 50,
@@ -97,9 +121,27 @@ function loadState(){
     if(state.saturation === undefined) state.saturation = 82;
     if(state.lightness === undefined) state.lightness = 50;
     if(!state.lang) state.lang = 'ar';
+    if(!state.themeMode) state.themeMode = 'dark';   // البند 1
+
+    // البند 5: ترحيل الألوان للعادات القديمة
+    let migrated = false;
+    state.habits.forEach((h, idx) => {
+      if(!h.color){
+        h.color = PALETTE[idx % PALETTE.length];
+        migrated = true;
+      }
+    });
+    if(migrated) saveState();
+
   }catch(e){ state = defaultState(); }
   lang = state.lang || 'ar';
   bgStyle = state.bgStyle || 'grid';
+  // البند 1: تطبيق الوضع الفاتح/الداكن
+  const isLight = state.themeMode === 'light';
+  document.body.classList.toggle('light-mode', isLight);
+  document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
+  document.getElementById('themeModePill').classList.toggle('on', isLight);
+
   applyPrimaryColor(state.primaryColor);
   applySaturation(state.saturation);
   applyBrightness(state.lightness);
@@ -108,7 +150,13 @@ function loadState(){
 function saveState(){
   state.lang = lang;
   state.bgStyle = bgStyle;
+  state.themeMode = document.body.classList.contains('light-mode') ? 'light' : 'dark'; // البند 1
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/* ---------- i18n helper ---------- */
+function t(key){
+  return I18N[lang]?.[key] || key;
 }
 
 /* ---------- Date helpers ---------- */
@@ -127,6 +175,8 @@ function getWeekdaysShort(){ return lang==='ar' ? WEEKDAYS_SHORT_AR : WEEKDAYS_S
 
 /* ---------- Habit factory ---------- */
 function makeHabit(data){
+  // البند 5: اختيار لون ثابت عند الإنشاء
+  const color = data.color || PALETTE[state.habits.length % PALETTE.length];
   return {
     id: 'h'+Date.now()+Math.floor(Math.random()*10000),
     name: data.name || 'عادة جديدة',
@@ -148,7 +198,8 @@ function makeHabit(data){
     sportUpStreak: 0,
     pendingReview: null,
     active: true,
-    monogram: data.name ? data.name.charAt(0).toUpperCase() : 'ع'
+    monogram: data.name ? data.name.charAt(0).toUpperCase() : 'ع',
+    color: color   // حفظ اللون
   };
 }
 
@@ -372,8 +423,6 @@ function buildHeatmap(habit){
 function el(sel){ return document.querySelector(sel); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function t(key){ return I18N[lang]?.[key] || key; }
-
 function render(){
   renderTopbar();
   if(currentView==='home') renderHome();
@@ -413,7 +462,8 @@ function renderHome(){
 
   const milestonesHtml = MILESTONES.map(m=>{
     const pos = m/TOTAL_DAYS*100;
-    const passed = js.elapsed>=m;
+    // البند 10: استخدام effectiveDays بدلاً من elapsed
+    const passed = js.effectiveDays >= m;
     return `<div class="journey-milestone ${passed?'passed':''}" style="right:${pos}%" title="${t('day')} ${m}"></div>`;
   }).join('');
 
@@ -513,11 +563,13 @@ function fmt(n){
   return Math.round(n*10)/10;
 }
 
+/* البند 5: دالة لون ثابتة */
 function getHabitColor(habit){
   if(habit.color) return habit.color;
-  const colors = ['#D4A017','#B8C2D0','#2060D0','#197A46','#7235A0','#BE1A38','#8B7355','#2C3E50'];
-  const idx = state.habits.indexOf(habit) % colors.length;
-  return colors[idx];
+  // احتياطي للبيانات القديمة
+  const idx = state.habits.indexOf(habit);
+  habit.color = PALETTE[idx % PALETTE.length];
+  return habit.color;
 }
 
 function toggleBinary(id){
@@ -531,13 +583,19 @@ function toggleBinary(id){
   if(!hit) showToast('✓ '+t('done'));
 }
 
+/* البند 9: خطوة متغيرة للمدة + الضغط المطول */
 function adjustQty(id, dir){
   const h = state.habits.find(x=>x.id===id);
   const today = todayStr();
   const log = getLog(h, today) || {completed:false, value:0};
   let step = 1;
   if(h.unit && (h.unit.includes('كم') || h.unit.includes('km') || h.unit.includes('كيلو'))) step = 0.1;
-  if(h.goalType==='duration') step = 30; // 30 seconds
+  if(h.goalType==='duration'){
+    // خطوة تعتمد على حجم الهدف
+    step = h.target >= 3600 ? 300       // ساعة فأكثر → 5 دقائق
+         : h.target >= 1200 ? 120       // 20 دقيقة فأكثر → دقيقتين
+         : 60;                          // غير ذلك → دقيقة واحدة
+  }
   let val = Math.max(0, Math.round((log.value + dir*step)*10)/10);
   const wasHit = log.value >= h.target;
   setLog(h, today, val>=h.target, val);
@@ -546,6 +604,24 @@ function adjustQty(id, dir){
   renderHome();
   const nowHit = val>=h.target;
   if(nowHit && !wasHit) showToast('✓ '+t('done'));
+}
+
+/* البند 9: الضغط المطول للأزرار (+/-) */
+function setupLongPress(){
+  document.querySelectorAll('.qty-btn').forEach(btn => {
+    let timer = null;
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const dir = btn.textContent === '+' ? 1 : -1;
+      const habitId = btn.closest('.habit-card').querySelector('.habit-qty')?.dataset?.habitId;
+      if(!habitId) return;
+      timer = setInterval(() => {
+        adjustQty(habitId, dir);
+      }, 150);
+    });
+    btn.addEventListener('pointerup', () => { clearInterval(timer); timer = null; });
+    btn.addEventListener('pointerleave', () => { clearInterval(timer); timer = null; });
+  });
 }
 
 /* ---------- Stats view ---------- */
@@ -559,22 +635,33 @@ function renderStats(){
     return;
   }
 
-  const habit = habits[0]; // show first habit stats for simplicity, can be extended
+  // البند 2: استخدام العادة المختارة
+  let habit = habits.find(h => h.id === selectedHabitId);
+  if(!habit) habit = habits[0];
+  if(habit) selectedHabitId = habit.id;
+
+  // تبويبات التنقل بين العادات (البند 2)
+  const tabsHtml = habits.map(h =>
+    `<div class="bg-option ${h.id === selectedHabitId ? 'active' : ''}" onclick="viewHabitStats('${h.id}')">${h.monogram} ${esc(h.name)}</div>`
+  ).join('');
 
   // Heatmap
   const cells = buildHeatmap(habit);
+  const today = todayStr();
   const heatmapHtml = cells.map((c,i)=>{
     if(!c.inRange) return `<div class="heatmap-cell empty"></div>`;
     if(!c.scheduled) return `<div class="heatmap-cell" style="background:var(--subtle-bg);"></div>`;
     const intensity = c.rate/100;
     const color = c.rate >= 0 ? `hsla(var(--theme-hue),var(--theme-sat),${20 + intensity*40}%,${0.2 + intensity*0.6})` : 'var(--subtle-bg)';
-    return `<div class="heatmap-cell" style="background:${color};position:relative;" title="${formatDate(c.date)}: ${c.rate}%">
+    // البند 8: إضافة onclick لفتح محرر اليوم (فقط للأيام الماضية والحالية)
+    const canEdit = dayDiff(c.date, today) <= 0;
+    const clickHandler = canEdit ? `onclick="openDayEditor('${habit.id}','${c.date}')"` : '';
+    return `<div class="heatmap-cell" style="background:${color};position:relative;" ${clickHandler} title="${formatDate(c.date)}: ${c.rate}%">
       <div class="h-tooltip">${formatDate(c.date)}: ${c.rate}%</div>
     </div>`;
   }).join('');
 
-  // Recent bars
-  const today = todayStr();
+  // Recent bars (last 30 days)
   let totalDone=0, totalReq=0;
   let day = habit.createdAt;
   while(dayDiff(day, today) >= 0){
@@ -610,7 +697,8 @@ function renderStats(){
   const adherence = totalReq? Math.round(totalDone/totalReq*100):0;
 
   el('#statsView').innerHTML = `
-    <div class="section-label" style="margin-top:8px;"><span>${esc(habit.name)}</span></div>
+    <div class="section-label" style="margin-top:8px;"><span>${t('details')}</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${tabsHtml}</div>
     <div class="glass-card habit-detail-hero fade-up">
       <div class="hd-icon" style="color:${getHabitColor(habit)}">${habit.monogram}</div>
       <div class="hd-name">${esc(habit.name)}</div>
@@ -627,10 +715,13 @@ function renderStats(){
     <div class="glass-card fade-up">
       <div class="heatmap-grid">${heatmapHtml}</div>
     </div>
-    <div style="margin-top:16px;">
-      <button class="btn btn-ghost btn-block btn-sm" onclick="confirmDeleteHabit('${habit.id}')">${t('delete_habit')}</button>
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button class="btn btn-sm btn-ghost" style="flex:1;" onclick="openEditHabit('${habit.id}')">${t('edit_habit')}</button>
+      <button class="btn btn-sm btn-ghost" style="flex:1;" onclick="confirmDeleteHabit('${habit.id}')">${t('delete_habit')}</button>
     </div>
   `;
+  // البند 9: إعداد الضغط المطول بعد رسم الأزرار
+  setTimeout(setupLongPress, 50);
 }
 
 /* ---------- Manage view ---------- */
@@ -642,7 +733,11 @@ function renderManage(){
         <div class="habit-name">${esc(h.name)}</div>
         <div class="habit-meta"><span class="habit-level-badge">${t('level')} ${h.level}</span><span>${h.days.map(d=>getWeekdaysShort()[d]).join(' ')}</span></div>
       </div>
-      <button class="btn btn-sm btn-ghost" onclick="goto('stats')">${t('details')}</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-ghost" onclick="viewHabitStats('${h.id}')">${t('details')}</button>
+        <!-- البند 6: زر تعديل -->
+        <button class="btn btn-sm btn-ghost" onclick="openEditHabit('${h.id}')">${t('edit_habit')}</button>
+      </div>
     </div>
   `).join('');
 
@@ -691,18 +786,58 @@ function renderReviews(){
   el('#reviewsView').innerHTML = `<div class="section-label" style="margin-top:8px;"><span>${t('reviews')}</span></div>${html}`;
 }
 
-/* ---------- Add habit ---------- */
+/* ---------- Add / Edit habit ---------- */
 function openAddHabit(){
   openModal(`
     <div class="modal-handle"></div>
     <div class="modal-title">${t('add_habit')}</div>
     <div class="modal-sub">${t('add_habit_sub')}</div>
+    ${habitFormFields('add')}
+    <button class="btn btn-block" onclick="confirmAddHabit()">${t('add')}</button>
+  `);
+  setupDayPicker('ahDaysPicker');
+  ahGoalTypeChange();
+  ahProgChange();
+}
+
+/* البند 6: فتح نموذج تعديل العادة */
+function openEditHabit(id){
+  const habit = state.habits.find(h => h.id === id);
+  if(!habit) return;
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title">${t('edit_habit')}</div>
+    <div class="modal-sub">${t('edit_habit_sub')}</div>
+    ${habitFormFields('edit', habit)}
+    <button class="btn btn-block" onclick="confirmEditHabit('${id}')">${t('save')}</button>
+  `);
+  setupDayPicker('ahDaysPicker');
+  // ملء الحقول بقيم العادة
+  document.getElementById('ahName').value = habit.name;
+  document.getElementById('ahGoalType').value = habit.goalType;
+  document.getElementById('ahUnit').value = habit.unit || '';
+  document.getElementById('ahTarget').value = habit.goalType==='duration' ? formatTarget(habit.target, 'duration') : habit.target;
+  document.getElementById('ahProgression').value = habit.progression;
+  document.getElementById('ahRangeMin').value = habit.rangeMin;
+  document.getElementById('ahRangeMax').value = habit.rangeMax;
+  document.getElementById('ahReviewPeriod').value = habit.reviewPeriodDays;
+  // تفعيل الأيام
+  document.querySelectorAll('#ahDaysPicker .day-chip').forEach(chip => {
+    chip.classList.toggle('on', habit.days.includes(parseInt(chip.dataset.d)));
+  });
+  ahGoalTypeChange();
+  ahProgChange();
+}
+
+/* دالة مساعدة لبناء حقول النموذج (مشتركة بين الإضافة والتعديل) */
+function habitFormFields(mode, habit){
+  return `
     <div class="form-group">
-      <label>${t('ob_name')}</label>
+      <label data-i18n="ob_name">${t('ob_name')}</label>
       <input type="text" id="ahName" placeholder="${t('name_placeholder')}">
     </div>
     <div class="form-group">
-      <label>${t('ob_goal_type')}</label>
+      <label data-i18n="ob_goal_type">${t('ob_goal_type')}</label>
       <select id="ahGoalType" onchange="ahGoalTypeChange()">
         <option value="number">${t('goal_number')}</option>
         <option value="duration">${t('goal_duration')}</option>
@@ -711,21 +846,21 @@ function openAddHabit(){
       </select>
     </div>
     <div class="form-group" id="ahUnitGroup">
-      <label>${t('ob_unit')}</label>
+      <label data-i18n="ob_unit">${t('ob_unit')}</label>
       <input type="text" id="ahUnit" placeholder="${t('unit_placeholder')}">
     </div>
     <div class="form-group" id="ahTargetGroup">
-      <label>${t('ob_target')}</label>
+      <label data-i18n="ob_target">${t('ob_target')}</label>
       <input type="text" id="ahTarget" placeholder="${t('target_placeholder')}">
     </div>
     <div class="form-group">
-      <label>${t('ob_days')}</label>
+      <label data-i18n="ob_days">${t('ob_days')}</label>
       <div class="day-picker" id="ahDaysPicker">
         ${getWeekdaysShort().map((d,i)=>`<div class="day-chip on" data-d="${i}">${d}</div>`).join('')}
       </div>
     </div>
     <div class="form-group">
-      <label>${t('ob_progression')}</label>
+      <label data-i18n="ob_progression">${t('ob_progression')}</label>
       <select id="ahProgression" onchange="ahProgChange()">
         <option value="smart">${t('prog_smart')}</option>
         <option value="range">${t('prog_range')}</option>
@@ -733,20 +868,21 @@ function openAddHabit(){
       </select>
     </div>
     <div class="form-group" id="ahRangeGroup" style="display:none;">
-      <label>${t('ob_range')}</label>
+      <label data-i18n="ob_range">${t('ob_range')}</label>
       <div style="display:flex;gap:10px;">
         <input type="number" id="ahRangeMin" placeholder="${t('min')}" value="3">
         <input type="number" id="ahRangeMax" placeholder="${t('max')}" value="5">
       </div>
     </div>
     <div class="form-group">
-      <label>${t('ob_review_period')}</label>
+      <label data-i18n="ob_review_period">${t('ob_review_period')}</label>
       <input type="number" id="ahReviewPeriod" value="15" min="3" max="90">
     </div>
-    <button class="btn btn-block" onclick="confirmAddHabit()">${t('add')}</button>
-  `);
-  // Setup day picker
-  document.querySelectorAll('#ahDaysPicker .day-chip').forEach(c=>{
+  `;
+}
+
+function setupDayPicker(id){
+  document.querySelectorAll(`#${id} .day-chip`).forEach(c => {
     c.onclick = function(){ this.classList.toggle('on'); };
   });
 }
@@ -763,12 +899,12 @@ function ahProgChange(){
 
 function confirmAddHabit(){
   const name = document.getElementById('ahName').value.trim();
-  if(!name){ showToast('الرجاء إدخال اسم العادة'); return; }
+  if(!name){ showToast(t('name_required')); return; }
   const goalType = document.getElementById('ahGoalType').value;
   const unit = document.getElementById('ahUnit').value.trim();
   const targetVal = document.getElementById('ahTarget').value.trim();
   const days = [...document.querySelectorAll('#ahDaysPicker .day-chip.on')].map(c=>parseInt(c.dataset.d));
-  if(!days.length){ showToast('اختر يومًا واحدًا على الأقل'); return; }
+  if(!days.length){ showToast(t('days_required')); return; }
   const progression = document.getElementById('ahProgression').value;
   const rangeMin = parseInt(document.getElementById('ahRangeMin').value) || 1;
   const rangeMax = parseInt(document.getElementById('ahRangeMax').value) || 5;
@@ -786,6 +922,28 @@ function confirmAddHabit(){
   showToast('✓ '+t('added'));
 }
 
+/* البند 6: تأكيد تعديل العادة */
+function confirmEditHabit(id){
+  const habit = state.habits.find(h => h.id === id);
+  if(!habit) return;
+  habit.name = document.getElementById('ahName').value.trim() || habit.name;
+  habit.goalType = document.getElementById('ahGoalType').value;
+  habit.unit = document.getElementById('ahUnit').value.trim();
+  const targetVal = document.getElementById('ahTarget').value.trim();
+  if(targetVal) habit.target = parseTarget(targetVal);
+  habit.days = [...document.querySelectorAll('#ahDaysPicker .day-chip.on')].map(c=>parseInt(c.dataset.d));
+  habit.progression = document.getElementById('ahProgression').value;
+  habit.rangeMin = parseInt(document.getElementById('ahRangeMin').value) || habit.rangeMin;
+  habit.rangeMax = parseInt(document.getElementById('ahRangeMax').value) || habit.rangeMax;
+  habit.reviewPeriodDays = parseInt(document.getElementById('ahReviewPeriod').value) || habit.reviewPeriodDays;
+  habit.monogram = habit.name.charAt(0).toUpperCase();
+  recomputeStreak(habit);
+  saveState();
+  closeModal();
+  render();
+  showToast('✓ '+t('done'));
+}
+
 /* ---------- Delete habit ---------- */
 function confirmDeleteHabit(id){
   openModal(`
@@ -801,9 +959,121 @@ function confirmDeleteHabit(id){
 
 function deleteHabit(id){
   state.habits = state.habits.filter(h=>h.id!==id);
+  if(selectedHabitId === id) selectedHabitId = state.habits.length ? state.habits[0].id : null;
   saveState();
   closeModal();
   render();
+}
+
+/* البند 2: عرض إحصائيات عادة محددة */
+function viewHabitStats(id){
+  selectedHabitId = id;
+  goto('stats');
+}
+
+/* ---------- البند 8: محرر اليوم السابق ---------- */
+function openDayEditor(habitId, dateStr){
+  const habit = state.habits.find(h => h.id === habitId);
+  if(!habit) return;
+  const today = todayStr();
+  if(dayDiff(dateStr, today) > 0){ showToast(t('future_not_allowed')); return; }
+  const log = getLog(habit, dateStr) || {completed: false, value: 0};
+  const isBinary = habit.goalType === 'binary';
+  const isOpen = habit.goalType === 'open';
+  const isDuration = habit.goalType === 'duration';
+  const isNumber = habit.goalType === 'number';
+
+  let valueInput = '';
+  if(isBinary){
+    valueInput = `
+      <div style="display:flex;gap:10px;align-items:center;">
+        <label>${t('done')}</label>
+        <input type="checkbox" id="dayEditorBinary" ${log.completed ? 'checked' : ''}>
+      </div>
+    `;
+  } else if(isOpen || isNumber || isDuration){
+    const currentVal = log.value;
+    let inputType = 'number';
+    let step = '1';
+    if(isDuration){
+      inputType = 'text';
+      step = '1';
+    }
+    valueInput = `
+      <label>${t('value')}</label>
+      <input type="${inputType}" id="dayEditorValue" value="${isDuration ? formatTarget(currentVal, 'duration') : currentVal}" step="${step}">
+    `;
+  }
+
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title">${t('edit_day')} — ${formatDate(dateStr)}</div>
+    <div class="modal-sub">${esc(habit.name)}</div>
+    ${valueInput}
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-block" onclick="saveDayLog('${habitId}','${dateStr}')">${t('save')}</button>
+      <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    </div>
+  `);
+}
+
+function saveDayLog(habitId, dateStr){
+  const habit = state.habits.find(h => h.id === habitId);
+  if(!habit) return;
+  let value = 0;
+  let completed = false;
+  if(habit.goalType === 'binary'){
+    completed = document.getElementById('dayEditorBinary').checked;
+    value = completed ? 1 : 0;
+  } else {
+    const valEl = document.getElementById('dayEditorValue');
+    if(habit.goalType === 'duration'){
+      const parts = valEl.value.split(':');
+      if(parts.length === 2) value = parseInt(parts[0])*60 + parseInt(parts[1]);
+      else value = parseFloat(valEl.value) || 0;
+    } else {
+      value = parseFloat(valEl.value) || 0;
+    }
+    completed = habit.goalType === 'open' ? value > 0 : value >= habit.target;
+  }
+  setLog(habit, dateStr, completed, value);
+  recomputeStreak(habit);
+  saveState();
+  closeModal();
+  renderStats();
+  showToast('✓ '+t('done'));
+}
+
+/* ---------- البند 7: استيراد نسخة احتياطية ---------- */
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!imported || !Array.isArray(imported.habits)) throw new Error('invalid');
+      state = imported;
+      if(!state.habits) state.habits = [];
+      if(!state.reviewHistory) state.reviewHistory = [];
+      saveState();
+      showToast('✓ ' + t('import_success'));
+      setTimeout(() => location.reload(), 800);
+    } catch(err){
+      showToast(t('import_error'));
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // إعادة تعيين الملف لاختيار نفس الملف مرة أخرى
+}
+
+/* ---------- البند 1: تبديل الوضع الفاتح/الداكن ---------- */
+function toggleThemeMode(){
+  const isLight = document.body.classList.toggle('light-mode');
+  document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
+  document.getElementById('themeModePill').classList.toggle('on', isLight);
+  state.themeMode = isLight ? 'light' : 'dark';
+  saveState();
 }
 
 /* ---------- Navigation ---------- */
@@ -976,12 +1246,12 @@ function obProgChange(){
 
 function obFinish(){
   const name = document.getElementById('obHabitName').value.trim();
-  if(!name){ showToast('الرجاء إدخال اسم العادة'); return; }
+  if(!name){ showToast(t('name_required')); return; }
   const goalType = document.getElementById('obGoalType').value;
   const unit = document.getElementById('obUnit').value.trim();
   const targetVal = document.getElementById('obTarget').value.trim();
   const days = [...document.querySelectorAll('#obDaysPicker .day-chip.on')].map(c=>parseInt(c.dataset.d));
-  if(!days.length){ showToast('اختر يومًا واحدًا على الأقل'); return; }
+  if(!days.length){ showToast(t('days_required')); return; }
   const progression = document.getElementById('obProgression').value;
   const rangeMin = parseInt(document.getElementById('obRangeMin').value) || 1;
   const rangeMax = parseInt(document.getElementById('obRangeMax').value) || 5;
@@ -1001,6 +1271,11 @@ function obFinish(){
   applySaturation(state.saturation);
   applyBrightness(state.lightness);
   setBgStyle(state.bgStyle || 'grid');
+  // البند 1: تطبيق الوضع الفاتح/الداكن بعد إنهاء الترحيب
+  const isLight = state.themeMode === 'light';
+  document.body.classList.toggle('light-mode', isLight);
+  document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
+  document.getElementById('themeModePill').classList.toggle('on', isLight);
   goto('home');
 }
 
@@ -1016,6 +1291,12 @@ function init(){
   document.getElementById('saturationSlider').value = state.saturation || 82;
   document.getElementById('brightnessSlider').value = state.lightness || 50;
   setBgStyle(state.bgStyle || 'grid');
+
+  // البند 1: تطبيق الوضع الفاتح/الداكن عند التحميل
+  const isLight = state.themeMode === 'light';
+  document.body.classList.toggle('light-mode', isLight);
+  document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
+  document.getElementById('themeModePill').classList.toggle('on', isLight);
 
   if(!state.onboarded){
     startOnboarding();
@@ -1057,25 +1338,32 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-// Expose functions globally
+// تصدير الدوال للاستخدام في HTML
 window.goto = goto;
 window.toggleSidebar = toggleSidebar;
 window.toggleLanguage = toggleLanguage;
+window.toggleThemeMode = toggleThemeMode;
 window.applyPrimaryColor = applyPrimaryColor;
 window.applySaturation = applySaturation;
 window.applyBrightness = applyBrightness;
 window.applyThemePreset = applyThemePreset;
 window.setBgStyle = setBgStyle;
 window.exportData = exportData;
+window.importData = importData;
 window.confirmReset = confirmReset;
 window.openAddHabit = openAddHabit;
+window.openEditHabit = openEditHabit;
 window.confirmAddHabit = confirmAddHabit;
+window.confirmEditHabit = confirmEditHabit;
 window.deleteHabit = deleteHabit;
 window.confirmDeleteHabit = confirmDeleteHabit;
 window.acceptReview = acceptReview;
 window.postponeReview = postponeReview;
 window.toggleBinary = toggleBinary;
 window.adjustQty = adjustQty;
+window.viewHabitStats = viewHabitStats;
+window.openDayEditor = openDayEditor;
+window.saveDayLog = saveDayLog;
 window.closeModal = closeModal;
 window.showToast = showToast;
 window.obNext = obNext;
