@@ -1,6 +1,6 @@
 /* ========================================================
    طريق 455 — Habit progression engine v2
-   جميع الإصلاحات والميزات الجديدة (10 بنود)
+   جميع الإصلاحات والميزات الجديدة
    ======================================================== */
 
 const STORAGE_KEY = 'h455_state_v2';
@@ -13,7 +13,7 @@ const WEEKDAYS_SHORT_EN = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-/* لوحة ألوان ثابتة للعادة (البند 5) */
+/* لوحة ألوان ثابتة للعادة */
 const PALETTE = ['#D4A017','#B8C2D0','#2060D0','#197A46','#7235A0','#BE1A38','#8B7355','#2C3E50'];
 
 /* ---------- i18n ---------- */
@@ -51,6 +51,12 @@ const I18N = {
     reset_confirm:'إعادة تعيين كل شيء؟', reset_confirm_sub:'سيتم حذف جميع البيانات نهائيًا.',
     reset:'إعادة تعيين', light:'فاتح', dark:'داكن', import_success:'تم استيراد النسخة بنجاح',
     import_error:'فشل الاستيراد — ملف غير صالح',
+    name_required:'يرجى إدخال اسم العادة', days_required:'يرجى اختيار يوم واحد على الأقل',
+    future_not_allowed:'لا يمكن تعديل أيام مستقبلية',
+    note_excellent_open:'أداء ممتاز! لكن الهدف مفتوح، استمر كما أنت.',
+    note_low_performance:'الأداء منخفض — تم تخفيف الحمل مؤقتًا.',
+    value:'القيمة', save:'حفظ', edit_day:'تعديل اليوم',
+    edit_value:'إدخال القيمة', enter_value_placeholder:'أدخل القيمة هنا'
   },
   en: {
     nav_home:'Home', nav_stats:'Progress', nav_manage:'Habits', nav_reviews:'Reviews',
@@ -85,6 +91,12 @@ const I18N = {
     reset_confirm:'Reset Everything?', reset_confirm_sub:'All data will be permanently deleted.',
     reset:'Reset', light:'Light', dark:'Dark', import_success:'Backup imported successfully',
     import_error:'Import failed — invalid file',
+    name_required:'Please enter habit name', days_required:'Select at least one day',
+    future_not_allowed:'Cannot edit future days',
+    note_excellent_open:'Excellent performance! But goal is open, keep going.',
+    note_low_performance:'Low performance — load temporarily reduced.',
+    value:'Value', save:'Save', edit_day:'Edit Day',
+    edit_value:'Enter Value', enter_value_placeholder:'Enter value here'
   }
 };
 
@@ -92,7 +104,7 @@ let lang = 'ar';
 let currentView = 'home';
 let state = null;
 let bgStyle = 'grid';
-let selectedHabitId = null;  // البند 2: تخزين العادة المختارة في شاشة الإحصائيات
+let selectedHabitId = null;
 
 /* ---------- State ---------- */
 function defaultState(){
@@ -100,7 +112,7 @@ function defaultState(){
     onboarded: false,
     startDate: todayStr(),
     lang: 'ar',
-    themeMode: 'dark',       // البند 1: تخزين الوضع الفاتح/الداكن
+    themeMode: 'dark',
     primaryColor: '#D4A017',
     saturation: 82,
     lightness: 50,
@@ -121,9 +133,8 @@ function loadState(){
     if(state.saturation === undefined) state.saturation = 82;
     if(state.lightness === undefined) state.lightness = 50;
     if(!state.lang) state.lang = 'ar';
-    if(!state.themeMode) state.themeMode = 'dark';   // البند 1
+    if(!state.themeMode) state.themeMode = 'dark';
 
-    // البند 5: ترحيل الألوان للعادات القديمة
     let migrated = false;
     state.habits.forEach((h, idx) => {
       if(!h.color){
@@ -136,7 +147,6 @@ function loadState(){
   }catch(e){ state = defaultState(); }
   lang = state.lang || 'ar';
   bgStyle = state.bgStyle || 'grid';
-  // البند 1: تطبيق الوضع الفاتح/الداكن
   const isLight = state.themeMode === 'light';
   document.body.classList.toggle('light-mode', isLight);
   document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
@@ -150,7 +160,7 @@ function loadState(){
 function saveState(){
   state.lang = lang;
   state.bgStyle = bgStyle;
-  state.themeMode = document.body.classList.contains('light-mode') ? 'light' : 'dark'; // البند 1
+  state.themeMode = document.body.classList.contains('light-mode') ? 'light' : 'dark';
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -175,7 +185,6 @@ function getWeekdaysShort(){ return lang==='ar' ? WEEKDAYS_SHORT_AR : WEEKDAYS_S
 
 /* ---------- Habit factory ---------- */
 function makeHabit(data){
-  // البند 5: اختيار لون ثابت عند الإنشاء
   const color = data.color || PALETTE[state.habits.length % PALETTE.length];
   return {
     id: 'h'+Date.now()+Math.floor(Math.random()*10000),
@@ -199,7 +208,7 @@ function makeHabit(data){
     pendingReview: null,
     active: true,
     monogram: data.name ? data.name.charAt(0).toUpperCase() : 'ع',
-    color: color   // حفظ اللون
+    color: color
   };
 }
 
@@ -253,7 +262,7 @@ function recomputeStreak(habit){
   }
   for(const ds of seq){
     if(!isScheduled(habit, ds)) continue;
-    if(dayDiff(ds, end) === 0 && !habit.logs[ds]) break;
+    if(dayDiff(ds, end) === 0 && !habit.logs[ds]) break; // اليوم الحالي لم يسجل بعد
     if(isHit(habit, ds)){ cur++; best=Math.max(best,cur); }
     else { cur = 0; }
   }
@@ -269,7 +278,6 @@ function growthTarget(habit){
     const next = Math.min(habit.rangeMax, Math.round((habit.target + (habit.rangeMax - habit.rangeMin) * 0.15)*10)/10);
     return Math.max(habit.rangeMin, next);
   }
-  // smart
   if(habit.goalType === 'duration'){
     return Math.ceil(habit.target * 1.10);
   }
@@ -309,13 +317,15 @@ function checkReviews(){
       let action, newTarget=habit.target, newLevel=habit.level, note='';
 
       if(rate>=80){
-        if(habit.goalType === 'open'){ action='hold'; note='أداء ممتاز! لكن الهدف مفتوح، استمر كما أنت.'; }
-        else {
+        if(habit.goalType === 'open'){
+          action='hold';
+          note = t('note_excellent_open');
+        } else {
           habit.sportUpStreak = (habit.sportUpStreak||0)+1;
           if(habit.sportUpStreak>=5){
             action='deload'; newTarget=deloadTarget(habit); habit.sportUpStreak=0;
             note='أسبوع تفريغ لمنح نفسك فرصة للاستشفاء.';
-          }else{
+          } else {
             action='up'; newTarget=growthTarget(habit); newLevel=habit.level+1;
             note='أداء ممتاز! جاهز لرفع المستوى.';
           }
@@ -325,7 +335,7 @@ function checkReviews(){
       } else {
         action='down'; newTarget=habit.goalType==='duration'?Math.max(60,Math.round(habit.target*0.85)):Math.max(1,Math.round(habit.target*0.85*10)/10);
         habit.sportUpStreak=0;
-        note='الأداء منخفض — تم تخفيف الحمل مؤقتًا.';
+        note = t('note_low_performance');
       }
 
       habit.pendingReview = {
@@ -462,9 +472,8 @@ function renderHome(){
 
   const milestonesHtml = MILESTONES.map(m=>{
     const pos = m/TOTAL_DAYS*100;
-    // البند 10: استخدام effectiveDays بدلاً من elapsed
     const passed = js.effectiveDays >= m;
-    return `<div class="journey-milestone ${passed?'passed':''}" style="right:${pos}%" title="${t('day')} ${m}"></div>`;
+    return `<div class="journey-milestone ${passed?'passed':''}" style="inset-inline-start:${pos}%" title="${t('day')} ${m}"></div>`;
   }).join('');
 
   const pending = state.habits.filter(h=>h.pendingReview);
@@ -524,9 +533,9 @@ function renderHome(){
           <div class="habit-name">${esc(h.name)}</div>
           <div class="habit-meta"><span class="habit-level-badge">${t('level')} ${h.level}</span><span>${t('goal')} ${goalDisplay} ${unitDisplay}</span><span>🔥 ${h.streak}</span></div>
         </div>
-        <div class="habit-qty">
+        <div class="habit-qty" data-habit-id="${h.id}">
           <button class="qty-btn" onclick="event.stopPropagation();adjustQty('${h.id}',-1)">−</button>
-          <span class="qty-val" style="color:${hit?'var(--good)':'var(--t60)'}">${displayVal}</span>
+          <span class="qty-val" style="color:${hit?'var(--good)':'var(--t60)'}" onclick="event.stopPropagation();openValueInput('${h.id}')">${displayVal}</span>
           <button class="qty-btn" onclick="event.stopPropagation();adjustQty('${h.id}',1)">+</button>
         </div>
       </div>`;
@@ -556,6 +565,7 @@ function renderHome(){
     <div class="section-label"><span>${t('today_habits')}</span></div>
     ${habitsHtml}
   `;
+  setupLongPress();
 }
 
 function fmt(n){
@@ -563,10 +573,8 @@ function fmt(n){
   return Math.round(n*10)/10;
 }
 
-/* البند 5: دالة لون ثابتة */
 function getHabitColor(habit){
   if(habit.color) return habit.color;
-  // احتياطي للبيانات القديمة
   const idx = state.habits.indexOf(habit);
   habit.color = PALETTE[idx % PALETTE.length];
   return habit.color;
@@ -583,18 +591,94 @@ function toggleBinary(id){
   if(!hit) showToast('✓ '+t('done'));
 }
 
-/* البند 9: خطوة متغيرة للمدة + الضغط المطول */
+/* ---------- تعديل القيمة المباشر ---------- */
+function openValueInput(habitId){
+  const habit = state.habits.find(h=>h.id===habitId);
+  if(!habit) return;
+  const today = todayStr();
+  const log = getLog(habit, today) || {completed:false, value:0};
+  const currentVal = log.value;
+  let inputType = 'number';
+  let inputValue = currentVal;
+  let step = '1';
+  if(habit.goalType === 'duration'){
+    inputType = 'text';
+    inputValue = formatTarget(currentVal, 'duration');
+  } else if(habit.goalType === 'open' || habit.goalType === 'number'){
+    inputValue = currentVal;
+  }
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title">${t('edit_value')} — ${esc(habit.name)}</div>
+    <div class="modal-sub">${t('today')} ${formatDate(today)}</div>
+    <div class="form-group">
+      <label>${t('value')} (${habit.unit || '∞'})</label>
+      <input type="${inputType}" id="valueInput" value="${inputValue}" step="${step}" placeholder="${t('enter_value_placeholder')}">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-block" onclick="saveValueInput('${habit.id}')">${t('save')}</button>
+      <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    </div>
+  `);
+  // تركيز تلقائي
+  setTimeout(()=>document.getElementById('valueInput')?.focus(), 100);
+}
+
+function saveValueInput(habitId){
+  const habit = state.habits.find(h=>h.id===habitId);
+  if(!habit) return;
+  const valEl = document.getElementById('valueInput');
+  if(!valEl) return;
+  const today = todayStr();
+  let value = 0;
+  if(habit.goalType === 'duration'){
+    const parts = valEl.value.split(':');
+    if(parts.length === 2) value = parseInt(parts[0])*60 + parseInt(parts[1]);
+    else value = parseFloat(valEl.value) || 0;
+  } else {
+    value = parseFloat(valEl.value) || 0;
+  }
+  const completed = habit.goalType === 'open' ? value > 0 : (habit.goalType === 'binary' ? value >= 1 : value >= habit.target);
+  setLog(habit, today, completed, value);
+  recomputeStreak(habit);
+  saveState();
+  closeModal();
+  renderHome();
+  showToast('✓ '+t('done'));
+}
+
+/* ---------- الضغط المطول للأزرار ---------- */
+function setupLongPress(){
+  document.querySelectorAll('.qty-btn').forEach(btn => {
+    // إزالة المستمعين السابقين لتجنب التكرار
+    if(btn._longPressSetup) return;
+    btn._longPressSetup = true;
+    let timer = null;
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const dir = btn.textContent === '+' ? 1 : -1;
+      const habitId = btn.closest('.habit-card').querySelector('.habit-qty')?.dataset.habitId;
+      if(!habitId) return;
+      timer = setInterval(() => {
+        adjustQty(habitId, dir);
+      }, 150);
+    });
+    btn.addEventListener('pointerup', () => { clearInterval(timer); timer = null; });
+    btn.addEventListener('pointerleave', () => { clearInterval(timer); timer = null; });
+    btn.addEventListener('pointercancel', () => { clearInterval(timer); timer = null; });
+  });
+}
+
 function adjustQty(id, dir){
   const h = state.habits.find(x=>x.id===id);
+  if(!h) return;
   const today = todayStr();
   const log = getLog(h, today) || {completed:false, value:0};
   let step = 1;
   if(h.unit && (h.unit.includes('كم') || h.unit.includes('km') || h.unit.includes('كيلو'))) step = 0.1;
   if(h.goalType==='duration'){
-    // خطوة تعتمد على حجم الهدف
-    step = h.target >= 3600 ? 300       // ساعة فأكثر → 5 دقائق
-         : h.target >= 1200 ? 120       // 20 دقيقة فأكثر → دقيقتين
-         : 60;                          // غير ذلك → دقيقة واحدة
+    // خطوة بالدقائق
+    step = h.target >= 60 ? 5 : h.target >= 20 ? 2 : 1;
   }
   let val = Math.max(0, Math.round((log.value + dir*step)*10)/10);
   const wasHit = log.value >= h.target;
@@ -604,24 +688,6 @@ function adjustQty(id, dir){
   renderHome();
   const nowHit = val>=h.target;
   if(nowHit && !wasHit) showToast('✓ '+t('done'));
-}
-
-/* البند 9: الضغط المطول للأزرار (+/-) */
-function setupLongPress(){
-  document.querySelectorAll('.qty-btn').forEach(btn => {
-    let timer = null;
-    btn.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      const dir = btn.textContent === '+' ? 1 : -1;
-      const habitId = btn.closest('.habit-card').querySelector('.habit-qty')?.dataset?.habitId;
-      if(!habitId) return;
-      timer = setInterval(() => {
-        adjustQty(habitId, dir);
-      }, 150);
-    });
-    btn.addEventListener('pointerup', () => { clearInterval(timer); timer = null; });
-    btn.addEventListener('pointerleave', () => { clearInterval(timer); timer = null; });
-  });
 }
 
 /* ---------- Stats view ---------- */
@@ -635,17 +701,14 @@ function renderStats(){
     return;
   }
 
-  // البند 2: استخدام العادة المختارة
   let habit = habits.find(h => h.id === selectedHabitId);
   if(!habit) habit = habits[0];
   if(habit) selectedHabitId = habit.id;
 
-  // تبويبات التنقل بين العادات (البند 2)
   const tabsHtml = habits.map(h =>
     `<div class="bg-option ${h.id === selectedHabitId ? 'active' : ''}" onclick="viewHabitStats('${h.id}')">${h.monogram} ${esc(h.name)}</div>`
   ).join('');
 
-  // Heatmap
   const cells = buildHeatmap(habit);
   const today = todayStr();
   const heatmapHtml = cells.map((c,i)=>{
@@ -653,7 +716,6 @@ function renderStats(){
     if(!c.scheduled) return `<div class="heatmap-cell" style="background:var(--subtle-bg);"></div>`;
     const intensity = c.rate/100;
     const color = c.rate >= 0 ? `hsla(var(--theme-hue),var(--theme-sat),${20 + intensity*40}%,${0.2 + intensity*0.6})` : 'var(--subtle-bg)';
-    // البند 8: إضافة onclick لفتح محرر اليوم (فقط للأيام الماضية والحالية)
     const canEdit = dayDiff(c.date, today) <= 0;
     const clickHandler = canEdit ? `onclick="openDayEditor('${habit.id}','${c.date}')"` : '';
     return `<div class="heatmap-cell" style="background:${color};position:relative;" ${clickHandler} title="${formatDate(c.date)}: ${c.rate}%">
@@ -661,7 +723,6 @@ function renderStats(){
     </div>`;
   }).join('');
 
-  // Recent bars (last 30 days)
   let totalDone=0, totalReq=0;
   let day = habit.createdAt;
   while(dayDiff(day, today) >= 0){
@@ -720,8 +781,6 @@ function renderStats(){
       <button class="btn btn-sm btn-ghost" style="flex:1;" onclick="confirmDeleteHabit('${habit.id}')">${t('delete_habit')}</button>
     </div>
   `;
-  // البند 9: إعداد الضغط المطول بعد رسم الأزرار
-  setTimeout(setupLongPress, 50);
 }
 
 /* ---------- Manage view ---------- */
@@ -735,7 +794,6 @@ function renderManage(){
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-sm btn-ghost" onclick="viewHabitStats('${h.id}')">${t('details')}</button>
-        <!-- البند 6: زر تعديل -->
         <button class="btn btn-sm btn-ghost" onclick="openEditHabit('${h.id}')">${t('edit_habit')}</button>
       </div>
     </div>
@@ -800,7 +858,6 @@ function openAddHabit(){
   ahProgChange();
 }
 
-/* البند 6: فتح نموذج تعديل العادة */
 function openEditHabit(id){
   const habit = state.habits.find(h => h.id === id);
   if(!habit) return;
@@ -812,7 +869,6 @@ function openEditHabit(id){
     <button class="btn btn-block" onclick="confirmEditHabit('${id}')">${t('save')}</button>
   `);
   setupDayPicker('ahDaysPicker');
-  // ملء الحقول بقيم العادة
   document.getElementById('ahName').value = habit.name;
   document.getElementById('ahGoalType').value = habit.goalType;
   document.getElementById('ahUnit').value = habit.unit || '';
@@ -821,7 +877,6 @@ function openEditHabit(id){
   document.getElementById('ahRangeMin').value = habit.rangeMin;
   document.getElementById('ahRangeMax').value = habit.rangeMax;
   document.getElementById('ahReviewPeriod').value = habit.reviewPeriodDays;
-  // تفعيل الأيام
   document.querySelectorAll('#ahDaysPicker .day-chip').forEach(chip => {
     chip.classList.toggle('on', habit.days.includes(parseInt(chip.dataset.d)));
   });
@@ -829,7 +884,6 @@ function openEditHabit(id){
   ahProgChange();
 }
 
-/* دالة مساعدة لبناء حقول النموذج (مشتركة بين الإضافة والتعديل) */
 function habitFormFields(mode, habit){
   return `
     <div class="form-group">
@@ -922,21 +976,24 @@ function confirmAddHabit(){
   showToast('✓ '+t('added'));
 }
 
-/* البند 6: تأكيد تعديل العادة */
 function confirmEditHabit(id){
   const habit = state.habits.find(h => h.id === id);
   if(!habit) return;
-  habit.name = document.getElementById('ahName').value.trim() || habit.name;
+  const name = document.getElementById('ahName').value.trim();
+  if(!name){ showToast(t('name_required')); return; }
+  const days = [...document.querySelectorAll('#ahDaysPicker .day-chip.on')].map(c=>parseInt(c.dataset.d));
+  if(!days.length){ showToast(t('days_required')); return; }
+  habit.name = name;
   habit.goalType = document.getElementById('ahGoalType').value;
   habit.unit = document.getElementById('ahUnit').value.trim();
   const targetVal = document.getElementById('ahTarget').value.trim();
   if(targetVal) habit.target = parseTarget(targetVal);
-  habit.days = [...document.querySelectorAll('#ahDaysPicker .day-chip.on')].map(c=>parseInt(c.dataset.d));
+  habit.days = days;
   habit.progression = document.getElementById('ahProgression').value;
   habit.rangeMin = parseInt(document.getElementById('ahRangeMin').value) || habit.rangeMin;
   habit.rangeMax = parseInt(document.getElementById('ahRangeMax').value) || habit.rangeMax;
   habit.reviewPeriodDays = parseInt(document.getElementById('ahReviewPeriod').value) || habit.reviewPeriodDays;
-  habit.monogram = habit.name.charAt(0).toUpperCase();
+  habit.monogram = name.charAt(0).toUpperCase();
   recomputeStreak(habit);
   saveState();
   closeModal();
@@ -965,13 +1022,12 @@ function deleteHabit(id){
   render();
 }
 
-/* البند 2: عرض إحصائيات عادة محددة */
 function viewHabitStats(id){
   selectedHabitId = id;
   goto('stats');
 }
 
-/* ---------- البند 8: محرر اليوم السابق ---------- */
+/* ---------- محرر اليوم السابق ---------- */
 function openDayEditor(habitId, dateStr){
   const habit = state.habits.find(h => h.id === habitId);
   if(!habit) return;
@@ -994,14 +1050,12 @@ function openDayEditor(habitId, dateStr){
   } else if(isOpen || isNumber || isDuration){
     const currentVal = log.value;
     let inputType = 'number';
-    let step = '1';
     if(isDuration){
       inputType = 'text';
-      step = '1';
     }
     valueInput = `
       <label>${t('value')}</label>
-      <input type="${inputType}" id="dayEditorValue" value="${isDuration ? formatTarget(currentVal, 'duration') : currentVal}" step="${step}">
+      <input type="${inputType}" id="dayEditorValue" value="${isDuration ? formatTarget(currentVal, 'duration') : currentVal}">
     `;
   }
 
@@ -1044,7 +1098,7 @@ function saveDayLog(habitId, dateStr){
   showToast('✓ '+t('done'));
 }
 
-/* ---------- البند 7: استيراد نسخة احتياطية ---------- */
+/* ---------- استيراد نسخة احتياطية ---------- */
 function importData(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -1064,10 +1118,10 @@ function importData(event){
     }
   };
   reader.readAsText(file);
-  event.target.value = ''; // إعادة تعيين الملف لاختيار نفس الملف مرة أخرى
+  event.target.value = '';
 }
 
-/* ---------- البند 1: تبديل الوضع الفاتح/الداكن ---------- */
+/* ---------- تبديل الوضع الفاتح/الداكن ---------- */
 function toggleThemeMode(){
   const isLight = document.body.classList.toggle('light-mode');
   document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
@@ -1130,7 +1184,7 @@ function applyPrimaryColor(hex){
   const hsl = hexToHsl(hex);
   document.documentElement.style.setProperty('--theme-hue', hsl.h);
   document.documentElement.style.setProperty('--theme-sat', hsl.s + '%');
-  document.documentElement.style.setProperty('--theme-light', (hsl.l/2) + '%');
+  document.documentElement.style.setProperty('--theme-light', hsl.l + '%'); // تصحيح: lightness مباشرة
   saveState();
 }
 
@@ -1142,7 +1196,7 @@ function applySaturation(val){
 
 function applyBrightness(val){
   state.lightness = parseInt(val);
-  document.documentElement.style.setProperty('--theme-light', (state.lightness/2) + '%');
+  document.documentElement.style.setProperty('--theme-light', state.lightness + '%');
   saveState();
 }
 
@@ -1271,7 +1325,6 @@ function obFinish(){
   applySaturation(state.saturation);
   applyBrightness(state.lightness);
   setBgStyle(state.bgStyle || 'grid');
-  // البند 1: تطبيق الوضع الفاتح/الداكن بعد إنهاء الترحيب
   const isLight = state.themeMode === 'light';
   document.body.classList.toggle('light-mode', isLight);
   document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
@@ -1292,7 +1345,6 @@ function init(){
   document.getElementById('brightnessSlider').value = state.lightness || 50;
   setBgStyle(state.bgStyle || 'grid');
 
-  // البند 1: تطبيق الوضع الفاتح/الداكن عند التحميل
   const isLight = state.themeMode === 'light';
   document.body.classList.toggle('light-mode', isLight);
   document.getElementById('themeModeLabel').textContent = isLight ? t('light') : t('dark');
@@ -1304,12 +1356,10 @@ function init(){
     goto('home');
   }
 
-  // Setup onboarding day picker
   document.querySelectorAll('#obDaysPicker .day-chip').forEach(c=>{
     c.onclick = function(){ this.classList.toggle('on'); };
   });
 
-  // Mouse glow
   document.addEventListener('pointermove', e=>{
     const color = state.primaryColor || '#D4A017';
     const hsl = hexToHsl(color);
@@ -1317,7 +1367,6 @@ function init(){
       `radial-gradient(circle 480px at ${e.clientX}px ${e.clientY}px,hsla(${hsl.h},${hsl.s}%,50%,0.05),transparent 45%)`;
   });
 
-  // PWA install
   let deferredPrompt=null;
   window.addEventListener('beforeinstallprompt', (e)=>{
     e.preventDefault(); deferredPrompt=e;
@@ -1361,6 +1410,8 @@ window.acceptReview = acceptReview;
 window.postponeReview = postponeReview;
 window.toggleBinary = toggleBinary;
 window.adjustQty = adjustQty;
+window.openValueInput = openValueInput;
+window.saveValueInput = saveValueInput;
 window.viewHabitStats = viewHabitStats;
 window.openDayEditor = openDayEditor;
 window.saveDayLog = saveDayLog;
